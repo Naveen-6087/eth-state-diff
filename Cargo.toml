@@ -1,0 +1,20 @@
+[package]
+name = "eth-state-diff"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Ethereum execution state diffs from prestateTracer traces: per transaction or per block, filtered and rendered as text, JSON, NDJSON or CSV"
+license = "MIT"
+repository = "https://github.com/Naveen-6087/x402"
+keywords = ["ethereum", "evm", "trace", "state-diff", "cli"]
+categories = ["command-line-utilities", "cryptography::cryptocurrencies"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive", "env"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
+
+[dev-dependencies]
+proptest = "1.5"
