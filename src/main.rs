@@ -41,6 +41,18 @@ enum Command {
         #[arg(long)]
         per_tx: bool,
     },
+    /// Net diff over a range of blocks (inclusive), via one debug_traceBlockByNumber per block.
+    Range {
+        /// First block number.
+        from: u64,
+        /// Last block number (inclusive).
+        to: u64,
+        #[command(flatten)]
+        rpc: RpcArgs,
+        /// Print each transaction separately instead of the net diff.
+        #[arg(long)]
+        per_tx: bool,
+    },
     /// Diff a saved trace (a tracer result, a block trace array or a JSON-RPC response); `-` reads stdin.
     File {
         /// Path to the JSON trace, or `-` for stdin.
@@ -150,6 +162,8 @@ fn build_report(diffs: Vec<TxDiff>, label: String, per_tx: bool, filter: &Filter
     }
 }
 
+const MAX_RANGE: u64 = 10_000;
+
 fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     let filter = cli.filter.build();
     let report = match &cli.command {
@@ -162,6 +176,19 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             let (client, opts) = client(rpc);
             let traces = client.trace_block(block, opts)?;
             build_report(diffs_from_traces(&traces), format!("block {block}"), *per_tx, &filter)
+        }
+        Command::Range { from, to, rpc, per_tx } => {
+            if from > to {
+                return Err(format!("empty range: {from} > {to}").into());
+            }
+            if to - from >= MAX_RANGE {
+                return Err(
+                    format!("range of {} blocks exceeds the limit of {MAX_RANGE}", to - from + 1).into()
+                );
+            }
+            let (client, opts) = client(rpc);
+            let traces = client.trace_range(*from, *to, opts)?;
+            build_report(diffs_from_traces(&traces), format!("blocks {from}..={to}"), *per_tx, &filter)
         }
         Command::File { path, per_tx } => {
             let mut text = String::new();
