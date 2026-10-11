@@ -1,3 +1,5 @@
+#![cfg(feature = "cli")]
+
 mod common;
 
 use std::io::Write;

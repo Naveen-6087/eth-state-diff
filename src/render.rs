@@ -5,7 +5,8 @@ use serde_json::{Map, Value, json};
 use crate::diff::{AccountDiff, AccountStatus, StateDiff, Summary, TxDiff};
 use crate::primitives::{B256, Delta, U256, encode_hex};
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, clap::ValueEnum)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
 pub enum Format {
     #[default]
     Text,
@@ -14,7 +15,8 @@ pub enum Format {
     Csv,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, clap::ValueEnum)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
 pub enum Unit {
     #[default]
     Ether,
