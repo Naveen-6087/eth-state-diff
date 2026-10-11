@@ -13,5 +13,5 @@ pub use filter::{Filter, Kind};
 pub use primitives::{Address, B256, Bytes, Delta, U256};
 pub use render::{Format, Report, Unit, render};
 #[cfg(feature = "rpc")]
-pub use rpc::{BlockId, RpcClient, RpcError, TracerOptions};
+pub use rpc::{BlockId, RpcClient, RpcClientBuilder, RpcError, TracerOptions};
 pub use trace::{AccountState, PrestateDiff, TraceError, TxTrace, parse_traces, parse_traces_str};

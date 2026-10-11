@@ -62,6 +62,22 @@ struct RpcArgs {
     /// Ask the tracer to omit contract code (smaller responses).
     #[arg(long)]
     no_code: bool,
+    /// Retries after connection errors and HTTP 429/502/503/504.
+    #[arg(long, default_value_t = 2)]
+    retries: u32,
+    /// Extra HTTP header for every request, as `Name: value` (repeatable).
+    #[arg(long = "header", short = 'H', value_parser = parse_header)]
+    headers: Vec<(String, String)>,
+}
+
+fn parse_header(s: &str) -> Result<(String, String), String> {
+    let (name, value) =
+        s.split_once(':').ok_or_else(|| format!("header `{s}` must look like `Name: value`"))?;
+    let name = name.trim();
+    if name.is_empty() || !name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_') {
+        return Err(format!("invalid header name `{name}`"));
+    }
+    Ok((name.to_owned(), value.trim().to_owned()))
 }
 
 #[derive(Args, Debug)]
@@ -114,7 +130,13 @@ impl FilterArgs {
 
 fn client(args: &RpcArgs) -> (RpcClient, TracerOptions) {
     let opts = TracerOptions { disable_code: args.no_code, disable_storage: false };
-    (RpcClient::new(&args.rpc, Duration::from_secs(args.timeout)), opts)
+    let mut builder = RpcClient::builder(&args.rpc)
+        .timeout(Duration::from_secs(args.timeout))
+        .retries(args.retries, Duration::from_millis(500));
+    for (name, value) in &args.headers {
+        builder = builder.header(name, value);
+    }
+    (builder.build(), opts)
 }
 
 fn build_report(diffs: Vec<TxDiff>, label: String, per_tx: bool, filter: &Filter) -> Report {
