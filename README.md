@@ -1,5 +1,10 @@
 # evm-state-diff
 
+[![crates.io](https://img.shields.io/crates/v/evm-state-diff)](https://crates.io/crates/evm-state-diff)
+[![docs.rs](https://img.shields.io/docsrs/evm-state-diff)](https://docs.rs/evm-state-diff)
+[![CI](https://github.com/Naveen-6087/eth-state-diff/actions/workflows/ci.yml/badge.svg)](https://github.com/Naveen-6087/eth-state-diff/actions/workflows/ci.yml)
+[![MSRV 1.85](https://img.shields.io/badge/MSRV-1.85-blue)](https://blog.rust-lang.org/2025/02/20/Rust-1.85.0/)
+
 A Rust CLI and library that shows exactly what an Ethereum transaction or
 block changed in state: balances, nonces, code and storage slots. It reads
 execution traces from geth's built-in `prestateTracer` in diff mode, turns
@@ -47,8 +52,24 @@ disappear.
 ## Install
 
 ```sh
-cargo install --git https://github.com/Naveen-6087/eth-state-diff
+cargo install evm-state-diff
 ```
+
+Prebuilt binaries for Linux, macOS and Windows are attached to each
+[GitHub release](https://github.com/Naveen-6087/eth-state-diff/releases).
+
+As a library:
+
+```toml
+[dependencies]
+evm-state-diff = { version = "0.1", default-features = false }                      # decode, compose, filter, render
+evm-state-diff = { version = "0.1", default-features = false, features = ["rpc"] }  # plus the RPC client
+```
+
+| Feature | Default | Adds |
+|---------|---------|------|
+| `rpc` | via `cli` | `RpcClient` (blocking, `ureq` + rustls): retries, custom headers, block ranges |
+| `cli` | yes | The `evm-state-diff` binary (`clap`) |
 
 You need an RPC endpoint with the `debug` namespace (for example
 `geth --http.api eth,debug`, or a provider that offers tracing), or a saved
@@ -62,13 +83,16 @@ evm-state-diff [OPTIONS] <COMMAND>
 Commands:
   tx     Diff a single transaction via debug_traceTransaction
   block  Diff a block via debug_traceBlockByNumber/Hash (number, 0x-hash or tag)
+  range  Net diff over a range of blocks (inclusive)
   file   Diff a saved trace (a tracer result, a block trace array or a JSON-RPC response); `-` reads stdin
 ```
 
 | Option | Meaning |
 |--------|---------|
-| `--rpc <URL>` (or `ETH_RPC_URL`) | Endpoint for `tx` and `block` |
-| `--per-tx` | For `block`/`file`: one diff per transaction instead of the net diff |
+| `--rpc <URL>` (or `ETH_RPC_URL`) | Endpoint for `tx`, `block` and `range` |
+| `-H, --header 'Name: value'` | Extra HTTP header, e.g. an API key (repeatable) |
+| `--retries <N>` | Retries after connection errors and HTTP 429/502/503/504 (default 2) |
+| `--per-tx` | For `block`/`range`/`file`: one diff per transaction instead of the net diff |
 | `-f, --format text\|json\|ndjson\|csv` | Output format (default `text`) |
 | `--unit ether\|wei` | Balance units in text output |
 | `--address <A>` / `--exclude <A>` | Keep only / hide accounts (repeatable) |
@@ -89,6 +113,9 @@ evm-state-diff block latest --rpc $ETH_RPC_URL -f json
 
 # Every transaction in block 21000000 separately, storage writes only, as CSV
 evm-state-diff block 21000000 --per-tx --kind storage -f csv --rpc $ETH_RPC_URL
+
+# Everything that changed over 100 blocks, through an authenticated provider
+evm-state-diff range 21000000 21000099 --rpc $RPC -H "Authorization: Bearer $TOKEN"
 
 # One contract's slot, from a trace you saved earlier
 evm-state-diff file trace.json --address 0x3a22…296a --slot 0x1
@@ -141,6 +168,21 @@ for (address, account) in &storage.accounts {
 }
 ```
 
+With the `rpc` feature:
+
+```rust
+use std::time::Duration;
+use evm_state_diff::{RpcClient, StateDiff, TracerOptions, diffs_from_traces};
+
+let client = RpcClient::builder("https://rpc.example")
+    .header("x-api-key", key)
+    .retries(3, Duration::from_millis(500))
+    .build();
+let traces = client.trace_range(21_000_000, 21_000_009, TracerOptions::default())?;
+let diffs = diffs_from_traces(&traces);
+let net = StateDiff::compose(diffs.iter().map(|t| &t.diff));
+```
+
 ## Architecture
 
 ```
@@ -161,7 +203,7 @@ for (address, account) in &storage.accounts {
 | `diff` | Decoding geth's diff encoding into `Change { from, to }` per field; composition; summaries |
 | `filter` | Address, kind, slot and balance-threshold filters |
 | `render` | The four output formats |
-| `rpc` | Minimal JSON-RPC client with helpful errors (for example a hint when the `debug` namespace is disabled) |
+| `rpc` | Blocking JSON-RPC client with retries, custom headers and helpful errors (for example a hint when the `debug` namespace is disabled) |
 
 ### Design decisions
 
@@ -176,8 +218,9 @@ for (address, account) in &storage.accounts {
   one canonical form per format.
 - **No big-number dependency.** The 256-bit arithmetic needed (add, sub,
   decimal and ether formatting) is about 150 lines with tests.
-- **Small dependency surface**: `serde`, `serde_json`, `clap`, `thiserror`,
-  and `ureq` with only rustls and JSON enabled.
+- **Small dependency surface**: the library needs only `serde`,
+  `serde_json` and `thiserror`. `ureq` (rustls and JSON only) and `clap`
+  come with the `rpc` and `cli` features.
 
 ## Testing
 
@@ -191,8 +234,8 @@ ETH_STATE_DIFF_REQUIRE_GETH=1 GETH=/path/to/geth cargo test   # also require the
 | `tests/geth.rs` (needs `geth`) | Starts `geth --dev` and runs four real transactions: deploying a contract, calling it (sets one slot, clears another, receives value), transferring to a fresh address, and creating plus self-destructing a contract in one transaction (EIP-6780). For **every** reported change, `from`/`to` must equal `eth_getBalance`, `eth_getTransactionCount`, `eth_getCode` and `eth_getStorageAt` at the blocks before and after. Also checks `debug_traceBlockByNumber`, the composed net diff across all four blocks against chain state, `disableCode`, and RPC errors |
 | `tests/properties.rs` (proptest, 512 cases each) | Random worlds of accounts, each transition encoded exactly as geth's tracer would. Applying the decoded diff reproduces the next state, with every `from` checked along the way. Composing a chain of diffs equals the end-to-end diff |
 | `tests/fixtures.rs` | Recorded geth traces still decode and render byte-for-byte as their golden `.txt` files |
-| `tests/cli.rs` | Every subcommand, format and filter; stdin and `-o`; exit codes; `tx`/`block` against a live geth when available |
-| Unit tests (25) | Parsing edge cases (RPC errors, failed transactions, non-diff traces, quantity variants), 256-bit arithmetic, decoding rules, composition, filters and renderers |
+| `tests/cli.rs` | Every subcommand, format and filter; stdin and `-o`; exit codes; `tx`/`block`/`range` against a live geth when available |
+| Unit tests (28) | Parsing edge cases (RPC errors, failed transactions, non-diff traces, quantity variants), 256-bit arithmetic, decoding rules, composition, filters and renderers |
 
 Without geth on `PATH` (or `GETH`), the live-node tests are skipped. CI
 builds geth and requires them.
@@ -205,6 +248,8 @@ builds geth and requires them.
 - The input must come from a `prestateTracer` in **diff mode** with geth's
   encoding. Other clients that follow it (Reth, Nethermind, Erigon) should
   work, but only geth is tested here.
+- `range` traces one block per request, sequentially; very long ranges are
+  slow and are capped at 10,000 blocks.
 - Addresses are printed in lowercase, without EIP-55 checksums.
 - Pre-Cancun traces can contain fully destroyed accounts. They are decoded
   (`status: destroyed`, every field going to zero) and unit tested, but a
