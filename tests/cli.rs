@@ -99,6 +99,7 @@ fn errors_and_exit_codes() {
     assert_eq!(run(&["file", &fixture("deploy"), "--address", "0x12"]).status.code(), Some(2));
     assert_eq!(run(&["file", &fixture("deploy"), "--kind", "gas"]).status.code(), Some(2));
     assert_eq!(run(&["block", "newest", "--rpc", "http://127.0.0.1:1"]).status.code(), Some(2));
+    assert_eq!(run(&["range", "9", "3", "--rpc", "http://127.0.0.1:1"]).status.code(), Some(1));
     assert_eq!(
         run(&["block", "latest", "--rpc", "http://127.0.0.1:1", "-H", "no-colon"]).status.code(),
         Some(2)
@@ -131,4 +132,15 @@ fn rpc_commands_against_geth() {
     let out = run(&["block", "latest", "--rpc", &geth.url, "--per-tx", "-f", "json"]);
     let per_tx: Value = serde_json::from_str(&stdout(&out)).unwrap();
     assert_eq!(per_tx["transactions"][0]["tx_hash"], hash);
+
+    let second =
+        geth.send(json!({"from": dev, "to": "0x00000000000000000000000000000000000000dd", "value": "0x7"}));
+    let last = second["blockNumber"].as_str().unwrap();
+    let (first, last) =
+        (u64::from_str_radix(&block[2..], 16).unwrap(), u64::from_str_radix(&last[2..], 16).unwrap());
+    let out = run(&["range", &first.to_string(), &last.to_string(), "--rpc", &geth.url, "-f", "json"]);
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    let range: Value = serde_json::from_str(&stdout(&out)).unwrap();
+    let dd = &range["accounts"]["0x00000000000000000000000000000000000000dd"];
+    assert_eq!((dd["balance"]["from"].as_str(), dd["balance"]["to"].as_str()), (Some("0"), Some("12")));
 }

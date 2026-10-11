@@ -214,6 +214,16 @@ impl RpcClient {
         Ok(trace)
     }
 
+    /// Traces every block in `from..=to`, in order, as one list of
+    /// transactions. Compose them for the net change over the range.
+    pub fn trace_range(&self, from: u64, to: u64, opts: TracerOptions) -> Result<Vec<TxTrace>, RpcError> {
+        let mut traces = Vec::new();
+        for n in from..=to {
+            traces.extend(self.trace_block(&BlockId::Number(n), opts)?);
+        }
+        Ok(traces)
+    }
+
     pub fn trace_block(&self, block: &BlockId, opts: TracerOptions) -> Result<Vec<TxTrace>, RpcError> {
         let (method, id) = match block {
             BlockId::Hash(h) => ("debug_traceBlockByHash", json!(h.to_string())),
