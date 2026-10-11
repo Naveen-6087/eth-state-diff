@@ -1,7 +1,7 @@
 mod common;
 
 use common::fixtures_dir;
-use eth_state_diff::{Format, Report, StateDiff, Unit, parse_traces_str, render};
+use evm_state_diff::{Format, Report, StateDiff, Unit, parse_traces_str, render};
 
 /// Traces captured from geth 1.17 (see tests/geth.rs) must still decode and
 /// render exactly as recorded.

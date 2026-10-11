@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use eth_state_diff::{Address, B256, Bytes, StateDiff, U256, parse_traces};
+use evm_state_diff::{Address, B256, Bytes, StateDiff, U256, parse_traces};
 use proptest::prelude::*;
 use serde_json::{Map, Value, json};
 

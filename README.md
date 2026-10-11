@@ -1,4 +1,4 @@
-# eth-state-diff
+# evm-state-diff
 
 A Rust CLI and library that shows exactly what an Ethereum transaction or
 block changed in state: balances, nonces, code and storage slots. It reads
@@ -7,7 +7,7 @@ them into explicit before → after values, nets out a whole block, filters
 the result and prints it as text, JSON, NDJSON or CSV.
 
 ```console
-$ eth-state-diff file testdata/geth/store_call.json     # or: eth-state-diff tx <hash> --rpc <url>
+$ evm-state-diff file testdata/geth/store_call.json     # or: evm-state-diff tx <hash> --rpc <url>
 == testdata/geth/store_call.json (1 transaction)
 0x3a220f351252089d385b29beca14e27f204c296a  modified
   balance  0 ETH -> 0.000000000000000003 ETH  (+0.000000000000000003 ETH)
@@ -39,7 +39,7 @@ raw output is a compact encoding that is easy to misread:
 - A storage slot in `pre` but **missing from `post`** was cleared to zero.
 - A slot only in `post` was zero before.
 
-`eth-state-diff` decodes those rules into explicit `from`/`to` pairs (taken
+`evm-state-diff` decodes those rules into explicit `from`/`to` pairs (taken
 from geth's `processDiffState`). It also composes the per-transaction diffs
 of a block into one net diff, so intermediate writes that cancel out
 disappear.
@@ -47,7 +47,7 @@ disappear.
 ## Install
 
 ```sh
-cargo install --git https://github.com/Naveen-6087/x402
+cargo install --git https://github.com/Naveen-6087/eth-state-diff
 ```
 
 You need an RPC endpoint with the `debug` namespace (for example
@@ -57,7 +57,7 @@ trace file.
 ## Usage
 
 ```
-eth-state-diff [OPTIONS] <COMMAND>
+evm-state-diff [OPTIONS] <COMMAND>
 
 Commands:
   tx     Diff a single transaction via debug_traceTransaction
@@ -85,16 +85,16 @@ Exit status: `0` success, `1` RPC, trace or I/O error, `2` invalid arguments.
 
 ```sh
 # Net effect of the latest block, as JSON
-eth-state-diff block latest --rpc $ETH_RPC_URL -f json
+evm-state-diff block latest --rpc $ETH_RPC_URL -f json
 
 # Every transaction in block 21000000 separately, storage writes only, as CSV
-eth-state-diff block 21000000 --per-tx --kind storage -f csv --rpc $ETH_RPC_URL
+evm-state-diff block 21000000 --per-tx --kind storage -f csv --rpc $ETH_RPC_URL
 
 # One contract's slot, from a trace you saved earlier
-eth-state-diff file trace.json --address 0x3a22…296a --slot 0x1
+evm-state-diff file trace.json --address 0x3a22…296a --slot 0x1
 
 # Pipe a raw JSON-RPC response straight in
-curl -s $ETH_RPC_URL -H 'content-type: application/json' -d '{…debug_traceTransaction…}' | eth-state-diff file -
+curl -s $ETH_RPC_URL -H 'content-type: application/json' -d '{…debug_traceTransaction…}' | evm-state-diff file -
 ```
 
 CSV (`--kind storage -f csv` on the call above):
@@ -128,7 +128,7 @@ minimal hex.
 ## Library
 
 ```rust
-use eth_state_diff::{Filter, Kind, StateDiff, parse_traces_str};
+use evm_state_diff::{Filter, Kind, StateDiff, parse_traces_str};
 
 let traces = parse_traces_str(&json)?;                     // any supported shape
 let per_tx: Vec<StateDiff> = traces.iter().map(|t| StateDiff::from_prestate(&t.diff)).collect();

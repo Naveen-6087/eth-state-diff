@@ -225,7 +225,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "eth-state-diff"
+name = "evm-state-diff"
 version = "0.1.0"
 dependencies = [
  "clap",

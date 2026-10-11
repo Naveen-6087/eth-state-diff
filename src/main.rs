@@ -5,14 +5,14 @@ use std::process::ExitCode;
 use std::time::Duration;
 
 use clap::{Args, Parser, Subcommand};
-use eth_state_diff::{
+use evm_state_diff::{
     Address, B256, BlockId, Filter, Format, Kind, Report, RpcClient, StateDiff, TracerOptions, TxDiff, U256,
     Unit, diffs_from_traces, parse_traces_str, render,
 };
 
 /// Ethereum execution state diffs from prestateTracer traces.
 #[derive(Parser, Debug)]
-#[command(name = "eth-state-diff", version)]
+#[command(name = "evm-state-diff", version)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -174,7 +174,7 @@ fn main() -> ExitCode {
             if e.downcast_ref::<io::Error>().is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe) {
                 return ExitCode::SUCCESS;
             }
-            eprintln!("eth-state-diff: {e}");
+            eprintln!("evm-state-diff: {e}");
             ExitCode::FAILURE
         }
     }

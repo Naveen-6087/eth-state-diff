@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
-use eth_state_diff::RpcClient;
+use evm_state_diff::RpcClient;
 use serde_json::{Value, json};
 
 /// A throwaway `geth --dev` node, killed on drop.
@@ -44,7 +44,7 @@ impl Geth {
             return None;
         };
         let port = free_port();
-        let datadir = std::env::temp_dir().join(format!("eth-state-diff-geth-{}-{port}", std::process::id()));
+        let datadir = std::env::temp_dir().join(format!("evm-state-diff-geth-{}-{port}", std::process::id()));
         let child = Command::new(bin)
             .args(["--dev", "--dev.period", "0", "--http", "--http.addr", "127.0.0.1"])
             .args(["--http.port", &port.to_string(), "--http.api", "eth,debug,net,web3"])

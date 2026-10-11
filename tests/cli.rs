@@ -7,7 +7,7 @@ use common::{Geth, fixtures_dir};
 use serde_json::{Value, json};
 
 fn bin() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_eth-state-diff"))
+    Command::new(env!("CARGO_BIN_EXE_evm-state-diff"))
 }
 
 fn run(args: &[&str]) -> Output {
@@ -72,7 +72,7 @@ fn reads_stdin_and_writes_files() {
     assert!(out.status.success());
     assert_eq!(serde_json::from_slice::<Value>(&out.stdout).unwrap()["summary"]["created"], 1);
 
-    let target = std::env::temp_dir().join(format!("eth-state-diff-cli-{}.csv", std::process::id()));
+    let target = std::env::temp_dir().join(format!("evm-state-diff-cli-{}.csv", std::process::id()));
     let out = run(&["file", &fixture("deploy"), "-f", "csv", "-o", &target.to_string_lossy()]);
     assert!(out.status.success());
     assert!(
@@ -87,7 +87,7 @@ fn errors_and_exit_codes() {
     assert_eq!(out.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&out.stderr).contains("does-not-exist.json"));
 
-    let not_diff = std::env::temp_dir().join(format!("eth-state-diff-plain-{}.json", std::process::id()));
+    let not_diff = std::env::temp_dir().join(format!("evm-state-diff-plain-{}.json", std::process::id()));
     std::fs::write(&not_diff, r#"{"0x00000000000000000000000000000000000000aa":{"balance":"0x1"}}"#).unwrap();
     let out = run(&["file", &not_diff.to_string_lossy()]);
     assert_eq!(out.status.code(), Some(1));
