@@ -99,6 +99,10 @@ fn errors_and_exit_codes() {
     assert_eq!(run(&["file", &fixture("deploy"), "--address", "0x12"]).status.code(), Some(2));
     assert_eq!(run(&["file", &fixture("deploy"), "--kind", "gas"]).status.code(), Some(2));
     assert_eq!(run(&["block", "newest", "--rpc", "http://127.0.0.1:1"]).status.code(), Some(2));
+    assert_eq!(
+        run(&["block", "latest", "--rpc", "http://127.0.0.1:1", "-H", "no-colon"]).status.code(),
+        Some(2)
+    );
     assert_eq!(run(&["tx"]).status.code(), Some(2));
 
     let unreachable = format!("0x{}", "ab".repeat(32));
