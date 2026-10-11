@@ -1,7 +1,7 @@
 mod common;
 
 use common::{Geth, fixtures_dir, update_fixtures};
-use eth_state_diff::{
+use evm_state_diff::{
     AccountStatus, Address, B256, BlockId, Format, Report, StateDiff, TracerOptions, U256, Unit,
     diffs_from_traces, parse_traces, render,
 };
@@ -175,5 +175,5 @@ fn disable_code_reports_code_hash_only() {
 fn missing_transaction_is_an_rpc_error() {
     let Some(geth) = Geth::start() else { return };
     let err = geth.client.trace_transaction(&B256([0x11; 32]), TracerOptions::default()).unwrap_err();
-    assert!(matches!(err, eth_state_diff::RpcError::Rpc { .. }), "{err}");
+    assert!(matches!(err, evm_state_diff::RpcError::Rpc { .. }), "{err}");
 }

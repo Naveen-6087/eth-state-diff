@@ -1,11 +1,11 @@
 [package]
-name = "eth-state-diff"
+name = "evm-state-diff"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Ethereum execution state diffs from prestateTracer traces: per transaction or per block, filtered and rendered as text, JSON, NDJSON or CSV"
 license = "MIT"
-repository = "https://github.com/Naveen-6087/x402"
+repository = "https://github.com/Naveen-6087/eth-state-diff"
 keywords = ["ethereum", "evm", "trace", "state-diff", "cli"]
 categories = ["command-line-utilities", "cryptography::cryptocurrencies"]
 
