@@ -9,12 +9,22 @@ repository = "https://github.com/Naveen-6087/eth-state-diff"
 keywords = ["ethereum", "evm", "trace", "state-diff", "cli"]
 categories = ["command-line-utilities", "cryptography::cryptocurrencies"]
 
+[features]
+default = ["cli"]
+cli = ["rpc", "dep:clap"]
+rpc = ["dep:ureq"]
+
 [dependencies]
-clap = { version = "4.5", features = ["derive", "env"] }
+clap = { version = "4.5", features = ["derive", "env"], optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2.0"
-ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
+ureq = { version = "3", default-features = false, features = ["rustls", "json"], optional = true }
+
+[[bin]]
+name = "evm-state-diff"
+path = "src/main.rs"
+required-features = ["cli"]
 
 [dev-dependencies]
 proptest = "1.5"

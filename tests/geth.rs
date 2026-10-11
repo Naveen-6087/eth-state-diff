@@ -1,3 +1,5 @@
+#![cfg(feature = "rpc")]
+
 mod common;
 
 use common::{Geth, fixtures_dir, update_fixtures};
